@@ -1,10 +1,12 @@
-import React, {useState} from 'react';
-import {TouchableOpacity} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, {useEffect, useState} from 'react';
+import {Alert, Switch, TouchableOpacity} from 'react-native';
 import {StyleSheet, View, Text, Image} from 'react-native';
 import ButtonForm from '../Components/ButtonForm';
 import InputForm from '../Components/InputForm';
 
 const LoginScreen = ({navigation}) => {
+  const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inputBackGcolor, setInputBackGcolor] = useState('#cce6ff');
@@ -32,6 +34,63 @@ const LoginScreen = ({navigation}) => {
       setPasswordError('');
     }
   };
+
+  const toggleRememberMe = value => {
+    //console.log('3-hello: on change ', value);
+    setRememberMe(value);
+    if (value === true) {
+      //user wants to be remembered
+      //console.log('4-from if: ', value);
+      rememberUser();
+    } else {
+      forgetUser();
+    }
+  };
+
+  const rememberUser = async () => {
+    //console.log('5- from rememberUSer hello');
+    try {
+      const key = email + '';
+      await AsyncStorage.setItem(key, password + '');
+      //console.log('6- email from rememberUser: ');
+      //console.log('7- key: ', key);
+      const asyncPass = await AsyncStorage.getItem(key);
+      //console.log('getItem: ', asyncPass);
+    } catch (error) {}
+  };
+
+  const forgetUser = async () => {
+    try {
+      const key = email + '';
+      await AsyncStorage.removeItem(key);
+    } catch (error) {}
+  };
+  const getRememberedUser = async () => {
+    try {
+      //console.log('email: ', email);
+      const key = email;
+      //console.log('email from getRememberedUser key: ', key);
+      const returnRememberedPass = await AsyncStorage.getItem(key + '');
+      if (returnRememberedPass !== null) {
+        // console.log(
+        //   'dans if returnRememberedPass from getRememberedUser key: ',
+        //   key,
+        // );
+        return returnRememberedPass;
+      }
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    //console.log('1-hello');
+    const fetchRemember = async () => {
+      const rememberedPass = await getRememberedUser();
+      setPassword(rememberedPass);
+      setRememberMe(rememberedPass ? true : false);
+      //console.log('hello nb 2', rememberedPass);
+    };
+    fetchRemember();
+  }, [email]);
 
   var yourPicture = require('../Images/logo.png');
 
@@ -69,16 +128,43 @@ const LoginScreen = ({navigation}) => {
 
       <Text style={styles.TextPassword}>{passwordError}</Text>
 
-      <TouchableOpacity onPress={onPress}>
-        <Text style={styles.forgot_button}>Forgot Password?</Text>
-      </TouchableOpacity>
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          marginRight: 110,
+        }}>
+        <Switch
+          value={rememberMe}
+          onValueChange={value => toggleRememberMe(value)}
+          style={{}}
+        />
+        <Text
+          style={{
+            color: '#003366', //'#262626',
+          }}>
+          Remember Me
+        </Text>
+      </View>
 
       <ButtonForm
         buttonTitle="LOGIN"
         onPress={() => {
-          alert('Login');
+          Alert.alert('Alert Title', 'My Alert Msg', [
+            {
+              text: 'Cancel',
+              onPress: () => console.log('Cancel Pressed'),
+              style: 'cancel',
+            },
+            {text: 'OK', onPress: () => console.log('OK Pressed')},
+          ]);
+          //Alert.alert('Login');
         }}
       />
+
+      <TouchableOpacity onPress={onPress}>
+        <Text style={styles.forgot_button}>Forgot Password?</Text>
+      </TouchableOpacity>
 
       <Text
         style={styles.registerTextStyle}
@@ -115,7 +201,7 @@ const styles = StyleSheet.create({
   },
   forgot_button: {
     color: '#a6a6a6', //'#2e64e5'
-    //marginBottom: 30,
+    paddingTop: 10,
     //fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Lato-Regular',
